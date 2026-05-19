@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Monitoring Ultrasonik</title>
+  <style>
+    body{
+      font-family: Arial;
+      text-align:center;
+      margin-top:100px;
+    }
+
+    h1{
+      font-size:40px;
+    }
+
+    #jarak{
+      font-size:60px;
+      color:blue;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Deteksi Ultrasonik ESP8266</h1>
+
+<div id="jarak">0 cm</div>
+
+<script>
+
+const ipESP = "http://192.168.1.10/data";
+
+async function bacaData(){
+
+  try{
+
+    let response = await fetch(ipESP);
+
+    let data = await response.json();
+
+    document.getElementById("jarak").innerHTML =
+      data.jarak + " cm";
+
+  }catch(err){
+    console.log(err);
+  }
+}
+
+setInterval(bacaData,1000);
+
+</script>
+
+</body>
+</html>
