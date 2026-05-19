@@ -2,7 +2,9 @@
 <html>
 <head>
   <title>Monitoring Ultrasonik</title>
+
   <style>
+
     body{
       font-family: Arial;
       text-align:center;
@@ -17,35 +19,40 @@
       font-size:60px;
       color:blue;
     }
+
   </style>
+
 </head>
+
 <body>
 
 <h1>Deteksi Ultrasonik ESP8266</h1>
 
 <div id="jarak">0 cm</div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
 <script>
 
-const ipESP = "http://192.168.1.80/data";
+const firebaseConfig = {
 
-async function bacaData(){
+  databaseURL:
+  "https://Iot-1-default-rtdb.asia-southeast1.firebasedatabase.app"
 
-  try{
+};
 
-    let response = await fetch(ipESP);
+firebase.initializeApp(firebaseConfig);
 
-    let data = await response.json();
+const db = firebase.database();
 
-    document.getElementById("jarak").innerHTML =
-      data.jarak + " cm";
+db.ref("sensor/jarak").on("value", (snapshot) => {
 
-  }catch(err){
-    console.log(err);
-  }
-}
+  document.getElementById("jarak").innerHTML =
+    snapshot.val() + " cm";
 
-setInterval(bacaData,1000);
+});
 
 </script>
 
