@@ -1,62 +1,191 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>Ultrasonik</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor Jarak Ultrasonik</title>
+  
+  <!-- Import Font Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 
   <style>
-
-    body{
-      font-family: Arial;
-      text-align:center;
-      margin-top:100px;
+    /* Reset Dasar */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    h1{
-      font-size:40px;
+    /* Latar Belakang Gradien */
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #333;
     }
 
-    #jarak{
-      font-size:60px;
-      color:blue;
+    /* Kartu Utama */
+    .sensor-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 40px;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+      transition: transform 0.3s ease;
     }
 
+    .sensor-card:hover {
+      transform: translateY(-5px);
+    }
+
+    /* Ikon Judul */
+    .icon-wrapper {
+      background: #f0f4ff;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .icon-wrapper svg {
+      width: 40px;
+      height: 40px;
+      fill: #667eea;
+    }
+
+    h1 {
+      font-size: 18px;
+      color: #555;
+      font-weight: 500;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Nilai Jarak Utama */
+    #jarak-container {
+      margin: 20px 0;
+    }
+
+    .distance-value {
+      font-size: 80px;
+      font-weight: 700;
+      line-height: 1;
+      color: #333;
+      transition: color 0.3s ease;
+    }
+
+    .unit {
+      font-size: 24px;
+      font-weight: 300;
+      color: #888;
+      vertical-align: super;
+      margin-left: 5px;
+    }
+
+    /* Status Baterai/Waktu (Opsional) */
+    .info-text {
+      font-size: 12px;
+      color: #999;
+      margin-top: 20px;
+    }
+    
+    .status-dot {
+      height: 8px;
+      width: 8px;
+      background-color: #4cd964;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(76, 217, 100, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(76, 217, 100, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(76, 217, 100, 0); }
+    }
   </style>
-
 </head>
-
 <body>
 
-<h1>Deteksi Ultrasonik ESP8266</h1>
+  <div class="sensor-card">
+    <!-- Ikon Sensor SVG -->
+    <div class="icon-wrapper">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      </svg>
+    </div>
 
-<div id="jarak">0 cm</div>
+    <h1>Deteksi Objek</h1>
+    
+    <div id="jarak-container">
+      <span id="jarak" class="distance-value">--</span>
+      <span class="unit">cm</span>
+    </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <div class="info-text">
+      <span class="status-dot"></span> Sensor Aktif
+    </div>
+  </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-<script>
+  <script>
+    // 1. Konfigurasi Firebase Anda
+    const firebaseConfig = {
+      databaseURL: "https://iot-1-adf37-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
 
-const firebaseConfig = {
+    // 2. Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  databaseURL:
-  "https://iot-1-adf37-default-rtdb.asia-southeast1.firebasedatabase.app"
+    // 3. Fungsi Mengubah Warna Otomatis
+    function updateColor(jarak) {
+      const el = document.getElementById("jarak");
+      
+      if (jarak < 20) {
+        // Sangat Dekat - Merah
+        el.style.color = "#ff4757"; 
+      } else if (jarak < 100) {
+        // Dekat/Sedang - Biru Ungu
+        el.style.color = "#667eea"; 
+      } else {
+        // Jauh - Hijau
+        el.style.color = "#2ed573"; 
+      }
+    }
 
-};
+    // 4. Membaca Data dari Realtime Database
+    db.ref("sensor/jarak").on("value", (snapshot) => {
+      const data = snapshot.val();
+      
+      if (data !== null) {
+        // Update Text
+        document.getElementById("jarak").innerText = data;
+        // Update Warna berdasarkan jarak
+        updateColor(data);
+      } else {
+        document.getElementById("jarak").innerText = "--";
+      }
+    }, (error) => {
+      console.error("Error koneksi:", error);
+      document.getElementById("jarak").innerText = "Err";
+    });
 
-firebase.initializeApp(firebaseConfig);
-
-const db = firebase.database();
-
-db.ref("sensor/jarak").on("value", (snapshot) => {
-
-  const data = snapshot.val();
-
-  document.getElementById("jarak").innerHTML =
-    data + " cm";
-
-});
-
-</script>
-
+  </script>
 </body>
 </html>
